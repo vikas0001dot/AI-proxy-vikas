@@ -1,37 +1,42 @@
-import express from "express";
-import fetch from "node-fetch";
-import cors from "cors";
+// ✅ AI Proxy Server (for Groq API)
+// Made for Vikas 💪
 
+const express = require("express");
+const fetch = require("node-fetch");
 const app = express();
-app.use(cors());
+
 app.use(express.json());
 
+// Environment variables
 const PORT = process.env.PORT || 10000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const apiKey = process.env.GROQ_API_KEY; // ✅ FIXED: matches Render environment variable
 
-// Root route (for testing)
+// Health check route (to show server is live)
 app.get("/", (req, res) => {
   res.send("✅ AI Proxy server is live and working!");
 });
 
-// Forward /v1/chat/completions to OpenAI
+// Proxy route to forward chat completions to Groq
 app.post("/v1/chat/completions", async (req, res) => {
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(req.body)
     });
 
-    const data = await response.text();
-    res.status(response.status).send(data);
+    const data = await response.json();
+    res.status(response.status).json(data);
   } catch (error) {
-    console.error("Proxy error:", error);
-    res.status(500).json({ error: "Proxy failed", details: error.message });
+    console.error("❌ Proxy error:", error);
+    res.status(500).json({ error: "Proxy request failed" });
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Proxy running on port ${PORT}`));
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Proxy running on port ${PORT}`);
+});
